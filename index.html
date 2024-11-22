@@ -372,10 +372,13 @@
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
             ctx.fillStyle = WHITE;
             ctx.font = '50px Arial';
-            const text = 'Karun Raid';
-            const text2 = 'A funny game by K. Mirpour'
+            const text = 'River Raid';
             ctx.fillText(text, WIDTH / 2 - ctx.measureText(text).width / 2, HEIGHT / 2);
-            ctx.fillText(text2, WIDTH / 2 - ctx.measureText(text).width / 2, HEIGHT / 6+ HEIGHT / 2);
+            ctx.font = '35px Arial'
+            const text2 = 'By K. Mirpour'
+            const text3 = 'Press space to start'
+            ctx.fillText(text2, WIDTH / 2 - ctx.measureText(text2).width / 2, HEIGHT / 10+ HEIGHT / 2);
+            ctx.fillText(text3, WIDTH / 2 - ctx.measureText(text3).width / 2, 2 * HEIGHT / 10+ HEIGHT / 2);
         }
 
         function gameOver() {
