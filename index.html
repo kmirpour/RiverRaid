@@ -373,12 +373,18 @@
             ctx.fillStyle = WHITE;
             ctx.font = '50px Arial';
             const text = 'River Raid';
-            ctx.fillText(text, WIDTH / 2 - ctx.measureText(text).width / 2, HEIGHT / 2);
-            ctx.font = '35px Arial'
+            ctx.fillText(text, WIDTH / 2 - ctx.measureText(text).width / 2, HEIGHT / 3);
+            ctx.font = '21px Arial'
             const text2 = 'By K. Mirpour'
-            const text3 = 'Press space to start'
-            ctx.fillText(text2, WIDTH / 2 - ctx.measureText(text2).width / 2, HEIGHT / 10+ HEIGHT / 2);
-            ctx.fillText(text3, WIDTH / 2 - ctx.measureText(text3).width / 2, 2 * HEIGHT / 10+ HEIGHT / 2);
+            const text3 = 'Press spacebar to start'
+            const text4 = 'Use left and right arrow to move'
+            const text5 = 'Spacebar to shoot'
+            ctx.fillText(text2, WIDTH / 2 - ctx.measureText(text2).width / 2, HEIGHT / 25+ HEIGHT / 3);
+            ctx.fillText(text3, WIDTH / 2 - ctx.measureText(text3).width / 2, 3 * HEIGHT / 30+ HEIGHT / 3);
+            ctx.fillText(text4, WIDTH / 2 - ctx.measureText(text4).width / 2, 4 * HEIGHT / 30+ HEIGHT / 3);
+            ctx.fillText(text5, WIDTH / 2 - ctx.measureText(text5).width / 2, 5 * HEIGHT / 30+ HEIGHT / 3);
+
+
         }
 
         function gameOver() {
@@ -388,13 +394,8 @@
             ctx.font = '72px Arial';
             const text = 'Game Over';
             ctx.fillText(text, WIDTH / 2 - ctx.measureText(text).width / 2, HEIGHT / 2);
-            ctx.font = '22px Arial';
-            const text2 = 'Karoon Raid by km';
-            ctx.fillText(text2, WIDTH / 2 - ctx.measureText(text2).width / 2, HEIGHT / 2 + 50);
-
-            if (!gameOverSound.played.length) {
-                gameOverSound.play();
-            }
+            gameOverSound.play();
+            
         }
     </script>
 </body>
