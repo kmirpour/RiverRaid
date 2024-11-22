@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>River Raid Clone</title>
+    <style>
+        body {
+            margin: 0;
+            background-color:rgb(0, 0, 0);
+            overflow: hidden;
+        }
+        canvas {
+            background: green;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="600" height="1000"></canvas>
+    <script>
+        // Get the canvas and context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set up display
+        const WIDTH = 600;
+        const HEIGHT = 1000;
+
+        // Define colors
+        const WHITE = '#FFFFFF';
+        const BLUE = '#0064FF';
+        const GREEN = '#00FF00';
+        const BLACK = '#000000';
+        const RED = '#FF0000';
+
+        // Load images
+        const planeImg = new Image();
+        planeImg.src = 'Images/player.png';
+
+        const enemyImg = new Image();
+        enemyImg.src = 'Images/enemy2.png';
+
+        const fuelImg = new Image();
+        fuelImg.src = 'Images/fuel.png';
+
+        // Load sounds
+        const shootSound = new Audio('Sounds/shoot4.wav');
+        const fuelSound = new Audio('Sounds/fuel.wav');
+        const hitEnemySound = new Audio('Sounds/explosion.wav');
+        const gameOverSound = new Audio('Sounds/gameOver.wav');
+        const dyingSound = new Audio('Sounds/lastBoom.wav');
+
+        // Key press tracking
+        const keys = {};
+
+        window.addEventListener('keydown', function (e) {
+            keys[e.key] = true;
+            if (e.key === ' ' && !waiting && running) {
+                player.shoot();
+            } else if (e.key === ' ' && waiting) {
+                waiting = false;
+            }
+        });
+
+        window.addEventListener('keyup', function (e) {
+            keys[e.key] = false;
+        });
+
+        // Game variables
+        let player;
+        let enemies = [];
+        let obstacles = [];
+        let fuels = [];
+        let bullets = [];
+        let score = 0;
+        let running = true;
+        let waiting = true;
+
+        // River boundaries
+        const riverLeft = 50;
+        const riverRight = WIDTH - 50;
+
+        // Classes
+        class Player {
+            constructor() {
+                this.image = planeImg;
+                this.width = 40;
+                this.height = 40;
+                this.x = WIDTH / 2 - this.width / 2;
+                this.y = HEIGHT - this.height - 10;
+                this.speedX = 0;
+                this.fuel = 100;
+            }
+
+            update() {
+                this.speedX = 0;
+                this.fuel -= 0.05; // Fuel consumption
+
+                if (keys['ArrowLeft'] || keys['a']) {
+                    this.speedX = -5;
+                }
+                if (keys['ArrowRight'] || keys['d']) {
+                    this.speedX = 5;
+                }
+
+                this.x += this.speedX;
+
+                // Keep player within river boundaries
+                if (this.x < riverLeft) {
+                    this.x = riverLeft;
+                }
+                if (this.x + this.width > riverRight) {
+                    this.x = riverRight - this.width;
+                }
+            }
+
+            draw() {
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
+
+            shoot() {
+                const bullet = new Bullet(this.x + this.width / 2, this.y);
+                bullets.push(bullet);
+                shootSound.play();
+            }
+        }
+
+        class Enemy {
+            constructor(x, y, speedY) {
+                this.image = enemyImg;
+                this.width = 30;
+                this.height = 30;
+                this.x = x;
+                this.y = y;
+                this.speedY = speedY;
+            }
+
+            update() {
+                this.y += this.speedY;
+            }
+
+            draw() {
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
+        }
+
+        class Obstacle {
+            constructor(x, y, speedY, lenX, lenY) {
+                this.width = lenY;
+                this.height = lenX;
+                this.x = x;
+                this.y = y;
+                this.speedY = speedY;
+            }
+
+            update() {
+                this.y += this.speedY;
+            }
+
+            draw() {
+                ctx.fillStyle = GREEN;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
+
+        class Fuel {
+            constructor(x, y, speedY) {
+                this.image = fuelImg;
+                this.width = 40;
+                this.height = 60;
+                this.x = x;
+                this.y = y;
+                this.speedY = speedY;
+            }
+
+            update() {
+                this.y += this.speedY;
+            }
+
+            draw() {
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
+        }
+
+        class Bullet {
+            constructor(x, y) {
+                this.width = 5;
+                this.height = 10;
+                this.x = x - this.width / 2;
+                this.y = y;
+                this.speedY = -10;
+            }
+
+            update() {
+                this.y += this.speedY;
+            }
+
+            draw() {
+                ctx.fillStyle = WHITE;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
+
+        // Initialize player
+        player = new Player();
+
+        // Game loop
+        function gameLoop() {
+            if (waiting) {
+                drawStartScreen();
+                requestAnimationFrame(gameLoop);
+            } else if (running) {
+                update();
+                draw();
+                requestAnimationFrame(gameLoop);
+            } else {
+                gameOver();
+            }
+        }
+
+        // Start the game loop
+        gameLoop();
+
+        function update() {
+            player.update();
+
+            // Update bullets
+            bullets = bullets.filter(bullet => {
+                bullet.update();
+                return bullet.y + bullet.height > 0;
+            });
+
+            // Update enemies
+            enemies = enemies.filter(enemy => {
+                enemy.update();
+                return enemy.y <= HEIGHT;
+            });
+
+            // Update fuels
+            fuels = fuels.filter(fuel => {
+                fuel.update();
+                return fuel.y <= HEIGHT;
+            });
+
+            // Update obstacles
+            obstacles = obstacles.filter(obstacle => {
+                obstacle.update();
+                return obstacle.y <= HEIGHT;
+            });
+
+            // Handle collisions
+            checkCollisions();
+
+            // Spawn entities
+            spawnEntities();
+
+            // Check if player fuel is depleted
+            if (player.fuel <= 0) {
+                running = false;
+            }
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+            // Draw river
+            ctx.fillStyle = BLUE;
+            ctx.fillRect(riverLeft, 0, riverRight - riverLeft, HEIGHT);
+
+            // Draw player
+            player.draw();
+
+            // Draw bullets
+            bullets.forEach(bullet => bullet.draw());
+
+            // Draw enemies
+            enemies.forEach(enemy => enemy.draw());
+
+            // Draw fuels
+            fuels.forEach(fuel => fuel.draw());
+
+            // Draw obstacles
+            obstacles.forEach(obstacle => obstacle.draw());
+
+            // Draw fuel bar
+            const fuelBarLength = 100;
+            const fuelBarHeight = 10;
+            const fill = (player.fuel / 100) * fuelBarLength;
+            ctx.fillStyle = GREEN;
+            ctx.fillRect(10, 10, fill, fuelBarHeight);
+            ctx.strokeStyle = WHITE;
+            ctx.strokeRect(10, 10, fuelBarLength, fuelBarHeight);
+
+            // Draw score
+            ctx.fillStyle = WHITE;
+            ctx.font = '24px Arial';
+            ctx.fillText(`Score: ${score}`, WIDTH - 120, 30);
+        }
+
+        function checkCollisions() {
+            // Collision between player and enemies
+            enemies.forEach((enemy, index) => {
+                if (collides(player, enemy)) {
+                    enemies.splice(index, 1);
+                    running = false;
+                    dyingSound.play();
+                }
+            });
+
+            // Collision between player and obstacles
+            obstacles.forEach((obstacle, index) => {
+                if (collides(player, obstacle)) {
+                    obstacles.splice(index, 1);
+                    running = false;
+                    dyingSound.play();
+                }
+            });
+
+            // Collision between player and fuels
+            fuels.forEach((fuel, index) => {
+                if (collides(player, fuel)) {
+                    fuels.splice(index, 1);
+                    player.fuel = Math.min(player.fuel + 20, 100);
+                    fuelSound.play();
+                }
+            });
+
+            // Collision between bullets and enemies
+            bullets.forEach((bullet, bIndex) => {
+                enemies.forEach((enemy, eIndex) => {
+                    if (collides(bullet, enemy)) {
+                        enemies.splice(eIndex, 1);
+                        bullets.splice(bIndex, 1);
+                        score += 10;
+                        hitEnemySound.play();
+                    }
+                });
+            });
+        }
+
+        function collides(a, b) {
+            return a.x < b.x + b.width &&
+                   a.x + a.width > b.x &&
+                   a.y < b.y + b.height &&
+                   a.y + a.height > b.y;
+        }
+
+        function spawnEntities() {
+            if (Math.random() < 0.02) {
+                const enemyX = Math.random() * (riverRight - riverLeft - 30) + riverLeft;
+                const enemy = new Enemy(enemyX, -150, Math.floor(Math.random() * 3) + 3);
+                enemies.push(enemy);
+            }
+            if (Math.random() < 0.003) {
+                const fuelX = Math.random() * (riverRight - riverLeft - 20) + riverLeft;
+                const fuel = new Fuel(fuelX, -20, 2);
+                fuels.push(fuel);
+            }
+            if (Math.random() < 0.003) {
+                const lenX = Math.floor(Math.random() * 100) + 30;
+                const lenY = Math.floor(Math.random() * 460) + 60;
+                const obstacleX = Math.random() * (riverRight - riverLeft - lenX) + riverLeft;
+                const obstacle = new Obstacle(obstacleX, -500, 2, lenY, lenX);
+                obstacles.push(obstacle);
+            }
+        }
+
+        function drawStartScreen() {
+            ctx.fillStyle = BLACK;
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            ctx.fillStyle = WHITE;
+            ctx.font = '48px Arial';
+            const text = 'Press SPACE to Start';
+            ctx.fillText(text, WIDTH / 2 - ctx.measureText(text).width / 2, HEIGHT / 2);
+        }
+
+        function gameOver() {
+            ctx.fillStyle = BLACK;
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            ctx.fillStyle = WHITE;
+            ctx.font = '72px Arial';
+            const text = 'Game Over';
+            ctx.fillText(text, WIDTH / 2 - ctx.measureText(text).width / 2, HEIGHT / 2);
+            ctx.font = '22px Arial';
+            const text2 = 'Karoon Raid by km';
+            ctx.fillText(text2, WIDTH / 2 - ctx.measureText(text2).width / 2, HEIGHT / 2 + 50);
+
+            if (!gameOverSound.played.length) {
+                gameOverSound.play();
+            }
+        }
+    </script>
+</body>
+</html>
